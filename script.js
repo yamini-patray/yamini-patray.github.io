@@ -348,10 +348,17 @@
     });
   });
 
-  /* ---------- Scroll progress + hero parallax ---------- */
+  /* ---------- Scroll progress + hero parallax + stack depth ---------- */
   const progress = document.getElementById("progress");
   const heroSec = document.querySelector(".hero");
   const heroInner = document.querySelector(".hero__inner");
+  const stackPanels = [...document.querySelectorAll(".panel")];
+  let panelTops = [];
+  const cachePanelTops = () => {
+    panelTops = stackPanels.map((p) => parseFloat(getComputedStyle(p).top) || 0);
+  };
+  cachePanelTops();
+  window.addEventListener("resize", cachePanelTops, { passive: true });
   let fxQueued = false;
   const scrollFx = () => {
     fxQueued = false;
@@ -363,6 +370,15 @@
       heroInner.style.transform = `translate3d(0, ${y * 0.22}px, 0)`;
       heroInner.style.opacity = String(1 - p * 0.9);
       if (canvas) canvas.style.transform = `translate3d(0, ${y * 0.1}px, 0)`;
+    }
+    if (!prefersReduced && stackPanels.length > 1) {
+      const vh = window.innerHeight;
+      for (let i = 0; i < stackPanels.length - 1; i++) {
+        const nextTop = stackPanels[i + 1].getBoundingClientRect().top;
+        const pr = Math.min(Math.max((vh - nextTop) / (vh - panelTops[i] - 40), 0), 1);
+        stackPanels[i].style.transform = pr > 0 ? `scale(${1 - pr * 0.045})` : "";
+        stackPanels[i].style.filter = pr > 0 ? `brightness(${1 - pr * 0.08})` : "";
+      }
     }
   };
   window.addEventListener("scroll", () => {
